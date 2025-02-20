@@ -18,3 +18,5 @@ Backup of *.layout
 
 # Bundler
 Gemfile.lock
+
+.ruby-version
