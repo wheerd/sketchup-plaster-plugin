@@ -5,7 +5,25 @@ module Wheerd::Plaster
     # @param Sketchup::Face face
     def initialize(face)
       @face = face
-      # UI.messagebox("Tool: #{other_faces.count}")
+      entities = Sketchup.active_model.entities
+      @other_faces = coplanar_faces(entities, @face)
+      @thickness = 10
+
+      if @other_faces.size == 0
+        UI.messagebox("No other faces found for plaster generation")
+        @grp = nil
+      else
+        @grp = @face.parent.entities.add_group
+        @grp.visible = false
+        @other_faces.each { |f|
+          @grp.entities.add_face(*f)
+        }
+        inner_edges = []
+        @grp.entities.grep(Sketchup::Edge) do |f|
+          inner_edges << f if f.faces.size == 2
+        end
+        @grp.entities.erase_entities(inner_edges)
+      end
     end
 
     def enableVCB?
@@ -37,13 +55,20 @@ module Wheerd::Plaster
       commit
     end
 
+    def onLButtonDoubleClick(_flags, _x, _y, _view)
+      commit
+    end
+
     # @param [Sketchup::View] view
     def onCancel(_reason, view)
+      reset
+      view.invalidate
     end
 
     # @param [String] text
     # @param [Sketchup::View] view
     def onUserText(text, view)
+      @thickness = text.to_i
     ensure
       update_ui
       view.invalidate
@@ -51,12 +76,19 @@ module Wheerd::Plaster
 
     # @return [Geom::BoundingBox]
     def getExtents
-      bounds = Geom::BoundingBox.new
-      bounds
+      @grp.bounds
     end
 
     # @param [Sketchup::View] view
     def draw(view)
+      view.line_width = 3
+      @grp.entities.grep(Sketchup::Face) { |f|
+        f.loops.each { |loop|
+          points = loop.vertices.map { |v| v.position }
+          view.drawing_color = loop.outer? ? "blue" : "orange"
+          view.draw_polyline(points)
+        }
+      }
     end
 
     private
@@ -64,44 +96,42 @@ module Wheerd::Plaster
     def update_ui
       Sketchup.status_text = "Create a plaster"
       Sketchup.vcb_label = "Thickness"
+      Sketchup.vcb_value = @thickness
+    end
+
+    def reset
+      Sketchup.active_model.tools.pop_tool
+      @grp.erase!
     end
 
     def commit
       model = Sketchup.active_model
       model.start_operation("Plaster", true)
-
-      other_faces = coplanar_faces(model.entities, @face)
+      puts @grp.entities.grep(Sketchup::Face).size
 
       parent = @face.parent
-      grp = parent.entities.add_group
-      other_faces.each { |f|
-        grp.entities.add_face(*f)
-      }
-      temp = []
-      grp.entities.grep(Sketchup::Edge) do |f|
-        temp << f if f.faces.size > 1
-      end
-      grp.entities.erase_entities(temp)
       obsoleteEdges = @face.edges.select { |f| f.faces.size == 1 }.to_a
       @face.erase!
       parent.entities.erase_entities(obsoleteEdges)
 
-      grp.entities.grep(Sketchup::Face) do |f|
-        f.pushpull(0.01.m)
+      @grp.visible = true
+      puts @grp.entities.grep(Sketchup::Face).size
+      @grp.entities.grep(Sketchup::Face) do |f|
+        #f.pushpull(-@thickness)
       end
 
       model.commit_operation
       model.tools.pop_tool
 
       model.selection.clear
-      model.selection.add grp
+      model.selection.add @grp
     end
 
     def coplanar_faces(entities, face, transformation = Geom::Transformation.new)
       faces = []
       entities.each { |f|
         if f.is_a?(Sketchup::Face)
-          if f != face
+          if f != face && f.visible?
             points = f.outer_loop.vertices.map { |v|
               v.position.transform(transformation)
             }
@@ -109,6 +139,11 @@ module Wheerd::Plaster
               type = face.classify_point(p)
               type >= Sketchup::Face::PointInside && type <= Sketchup::Face::PointOnFace
             }
+              inner = f.loops.select(&:outer?).map { |loop|
+                loop.vertices.map { |v|
+                  v.position.transform(transformation)
+                }
+              }
               faces << points
             end
           end
