@@ -100,13 +100,18 @@ module Wheerd::Plaster
     # @param [Sketchup::View] view
     def draw(view)
       view.line_width = 3
+      offset = Geom::Transformation.translation(@face.normal.transform(-@thickness))
       @plaster_faces.each { |f|
         outer = f[0]
         view.drawing_color = "blue"
-        view.draw_polyline(outer)
+        view.draw(GL_LINE_LOOP, outer)
+        offsetOuter = outer.map { |v| v.transform(offset) }
+        view.draw(GL_LINE_LOOP, offsetOuter)
         f[1].each { |loop|
           view.drawing_color = "orange"
-          view.draw_polyline(loop)
+          view.draw(GL_LINE_LOOP, loop)
+          offsetLoop = loop.map { |v| v.transform(offset) }
+          view.draw(GL_LINE_LOOP, offsetLoop)
         }
       }
     end
