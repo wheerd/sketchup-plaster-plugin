@@ -32,7 +32,7 @@ module Wheerd::Plaster
           @plaster_faces = faces.map { |f|
             [f.outer_loop.vertices.map { |v|
               v.position
-            }, f.loops.select { |l| !l.outer? }.map { |l|
+            }, f.loops.select { |l| !l.outer? && l.vertices.size > 2 }.map { |l|
               l.vertices.map { |v|
                 v.position
               }
@@ -100,7 +100,9 @@ module Wheerd::Plaster
     # @param [Sketchup::View] view
     def draw(view)
       view.line_width = 3
-      offset = Geom::Transformation.translation(@face.normal.transform(-@thickness))
+      angle = @face.normal.angle_between(view.camera.direction)
+      scale = angle < Math::PI / 2 ? -@thickness : @thickness
+      offset = Geom::Transformation.translation(@face.normal.transform(scale))
       @plaster_faces.each { |f|
         outer = f[0]
         view.drawing_color = "blue"
@@ -134,10 +136,13 @@ module Wheerd::Plaster
       model = Sketchup.active_model
       model.start_operation("Plaster", true)
 
+      view = Sketchup.active_model.active_view
+      angle = @face.normal.angle_between(view.camera.direction)
+      thickness = angle < Math::PI / 2 ? -@thickness : @thickness
+
       parent = @face.parent
       obsoleteEdges = @face.edges.select { |f| f.faces.size == 1 }.to_a
       @face.erase!
-
       parent.entities.erase_entities(obsoleteEdges)
 
       grp = parent.entities.add_group
@@ -150,7 +155,7 @@ module Wheerd::Plaster
       end
 
       grp.entities.grep(Sketchup::Face).to_a.each do |f|
-        f.pushpull(@thickness)
+        f.pushpull(thickness)
       end
 
       model.commit_operation
