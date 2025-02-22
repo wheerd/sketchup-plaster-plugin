@@ -3,6 +3,7 @@ require "sketchup"
 module Wheerd::Plaster
   class PlasterTool
     AREA_THRESHOLD = 0.3.m * 0.3.m
+    GAP_THRESHOLD = 0.15.m
 
     # @param Sketchup::Face face
     def initialize(face, transform)
@@ -35,7 +36,7 @@ module Wheerd::Plaster
             if !l.outer? && l.vertices.size > 2
               inner = l.vertices.map { |v| v.position }
               area = get_area(inner)
-              if area > AREA_THRESHOLD
+              if area > AREA_THRESHOLD && !is_gap?(inner)
                 holes << inner
               end
             end
@@ -207,6 +208,20 @@ module Wheerd::Plaster
       face = grp.entities.add_face(loop)
       begin
         return face.area
+      ensure
+        grp.erase!
+      end
+    end
+
+    def is_gap?(loop)
+      grp = Sketchup.active_model.entities.add_group
+      face = grp.entities.add_face(loop)
+      begin
+        lengths = face.edges.map { |e| e.length }.sort
+        if lengths.size == 4 && lengths[0] == lengths[1] && lengths[2] == lengths[3]
+          return lengths[0] < GAP_THRESHOLD
+        end
+        return false
       ensure
         grp.erase!
       end
