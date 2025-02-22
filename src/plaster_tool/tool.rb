@@ -6,6 +6,14 @@ module Wheerd::Plaster
     def initialize(face)
       @face = face
       @thickness = 10
+      @mouse_ip = Sketchup::InputPoint.new
+      @mouse_ip_inf = Sketchup::InputPoint.new
+      @picked_ip = Sketchup::InputPoint.new
+      @picked_plane = nil
+
+      @plaster_faces = []
+      @bounds = Geom::BoundingBox.new
+      return
 
       model = Sketchup.active_model
       entities = model.entities
@@ -73,6 +81,31 @@ module Wheerd::Plaster
       commit
     end
 
+    def onMouseMove(flags, x, y, view)
+      changed = if @picked_ip.valid?
+          @mouse_ip_inf.pick(view, x, y, @picked_ip)
+        else
+          @mouse_ip_inf.pick(view, x, y)
+        end
+      if changed && @mouse_ip_inf.degrees_of_freedom == 0
+        face = @mouse_ip_inf.face
+        if !face
+          view.pick_helper.do_pick(x, y)
+          face = view.pick_helper.picked_face
+        end
+        @picked_plane = face.plane
+        @mouse_ip.copy!(@mouse_ip_inf)
+        update_ui
+        view.invalidate
+      end
+    end
+
+    def onLButtonDown(flags, x, y, view)
+      @picked_ip.copy!(@mouse_ip)
+      update_ui
+      view.invalidate
+    end
+
     def onLButtonDoubleClick(_flags, _x, _y, _view)
       commit
     end
@@ -86,7 +119,7 @@ module Wheerd::Plaster
     # @param [String] text
     # @param [Sketchup::View] view
     def onUserText(text, view)
-      @thickness = text.to_i
+      @thickness = text.to_l
     ensure
       update_ui
       view.invalidate
@@ -100,9 +133,12 @@ module Wheerd::Plaster
     # @param [Sketchup::View] view
     def draw(view)
       view.line_width = 3
-      angle = @face.normal.angle_between(view.camera.direction)
+      #angle = @face.normal.angle_between(view.camera.direction)
+      @mouse_ip.draw(view) if @mouse_ip.display?
+      @picked_ip.draw(view) if @picked_ip.display?
+      angle = 0
       scale = angle < Math::PI / 2 ? -@thickness : @thickness
-      offset = Geom::Transformation.translation(@face.normal.transform(scale))
+      #offset = Geom::Transformation.translation(@face.normal.transform(scale))
       @plaster_faces.each { |f|
         outer = f[0]
         view.drawing_color = "blue"

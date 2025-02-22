@@ -14,12 +14,7 @@ module Wheerd
       cmd.small_icon = File.join(PATH, "icon.svg")
       cmd.large_icon = File.join(PATH, "icon.svg")
       cmd.set_validation_proc {
-        selection = Sketchup.active_model.selection
-        if selection.size == 1 && selection[0].is_a?(Sketchup::Face)
-          MF_ENABLED
-        else
-          MF_GRAYED
-        end
+        is_active? ? MF_ENABLED : MF_GRAYED
       }
       cmd_activate_plaster_tool = cmd
 
@@ -31,14 +26,22 @@ module Wheerd
       toolbar.restore
 
       UI.add_context_menu_handler do |context_menu|
-        selection = Sketchup.active_model.selection
-        if selection.size == 1 && selection[0].is_a?(Sketchup::Face)
+        if is_active?
           context_menu.add_item cmd_activate_plaster_tool
         end
       end
 
+      def self.is_active?
+        selection = Sketchup.active_model.selection
+        #selection.size == 1 && selection[0].is_a?(Sketchup::Face)
+        true
+      end
+
       def self.activate_plaster_tool
         model = Sketchup.active_model
+        tool = PlasterTool.new(nil)
+        model.select_tool(tool)
+        return
         selection = model.selection
         unless selection.size == 1 && selection[0].is_a?(Sketchup::Face)
           UI.messagebox("Select a single face to create plaster from.")
