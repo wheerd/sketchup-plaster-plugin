@@ -30,6 +30,7 @@ module Wheerd::Plaster
         @plaster_faces = []
 
         faces.each { |f|
+          next if f.outer_loop.vertices.size < 3
           outer = f.outer_loop.vertices.map { |v| v.position }
           holes = []
           f.loops.each { |l|
