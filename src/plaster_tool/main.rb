@@ -33,21 +33,18 @@ module Wheerd
 
       def self.is_active?
         selection = Sketchup.active_model.selection
-        #selection.size == 1 && selection[0].is_a?(Sketchup::Face)
-        true
+        selection.size == 1 && selection[0].is_a?(Sketchup::Face)
       end
 
       def self.activate_plaster_tool
         model = Sketchup.active_model
-        tool = PlasterTool.new(nil)
-        model.select_tool(tool)
-        return
+        transform = Sketchup::InstancePath.new(model.active_path).transformation
         selection = model.selection
         unless selection.size == 1 && selection[0].is_a?(Sketchup::Face)
           UI.messagebox("Select a single face to create plaster from.")
           return
         end
-        tool = PlasterTool.new(selection[0])
+        tool = PlasterTool.new(selection[0], transform)
         model.select_tool(tool)
       end
 
