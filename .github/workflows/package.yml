@@ -24,7 +24,7 @@ jobs:
         uses: montudor/action-zip@v1
         if: github.head_ref == null
         with:
-          args: zip -qq -r plaster-plugin.rbz src/*
+          args: zip -qq -r plaster-plugin.rbz src
 
       - name: Update latest tag
         uses: EndBug/latest-tag@v1.6.2
