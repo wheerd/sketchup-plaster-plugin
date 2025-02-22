@@ -2,6 +2,8 @@ require "sketchup"
 
 module Wheerd::Plaster
   class PlasterTool
+    AREA_THRESHOLD = 0.3.m * 0.3.m
+
     # @param Sketchup::Face face
     def initialize(face, transform)
       @normal = face.normal.transform(transform)
@@ -17,24 +19,29 @@ module Wheerd::Plaster
       begin
         grp = model.entities.add_group
         other_faces.each { |f|
-          grp.entities.add_face(*f)
+          if get_area(f) > 0
+            grp.entities.add_face(*f)
+          end
         }
         @bounds = grp.bounds
-        inner_edges = []
-        grp.entities.grep(Sketchup::Edge) do |f|
-          inner_edges << f if f.faces.size == 2
-        end
-        grp.entities.erase_entities(inner_edges)
+        remove_inner_edges(grp.entities)
         faces = grp.entities.grep(Sketchup::Face).to_a
-        @plaster_faces = faces.map { |f|
-          [f.outer_loop.vertices.map { |v|
-            v.position
-          }, f.loops.select { |l| !l.outer? && l.vertices.size > 2 }.map { |l|
-            l.vertices.map { |v|
-              v.position
-            }
-          }]
-        }.to_a
+        @plaster_faces = []
+
+        faces.each { |f|
+          outer = f.outer_loop.vertices.map { |v| v.position }
+          holes = []
+          f.loops.each { |l|
+            if !l.outer? && l.vertices.size > 2
+              inner = l.vertices.map { |v| v.position }
+              area = get_area(inner)
+              if area > AREA_THRESHOLD
+                holes << inner
+              end
+            end
+          }
+          @plaster_faces << [outer, holes]
+        }
       ensure
         model.abort_operation
       end
@@ -184,6 +191,25 @@ module Wheerd::Plaster
       v = Geom::Vector3d.new(a, b, c)
       p = ORIGIN.offset(v.reverse, d)
       return [p, v]
+    end
+
+    def remove_inner_edges(entities)
+      inner_edges = []
+      entities.grep(Sketchup::Edge) do |f|
+        inner_edges << f if f.faces.size >= 2
+      end
+      entities.erase_entities(inner_edges)
+      inner_edges.size
+    end
+
+    def get_area(loop)
+      grp = Sketchup.active_model.entities.add_group
+      face = grp.entities.add_face(loop)
+      begin
+        return face.area
+      ensure
+        grp.erase!
+      end
     end
   end # class
 end # module
