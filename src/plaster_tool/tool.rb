@@ -27,7 +27,18 @@ module Wheerd::Plaster
         }
         inner.explode
         @bounds = grp.bounds
-        remove_inner_edges(grp.entities)
+
+        edges = relevant_edges(grp.entities)
+        grp.entities.clear!
+
+        edges.each { |e|
+          edge = grp.entities.add_edges(e).first
+          edge.find_faces
+        }
+        grp.entities.grep(Sketchup::Face) { |f|
+          f.erase! if f.loops.size == 1
+        }
+
         faces = grp.entities.grep(Sketchup::Face).to_a
         @plaster_faces = []
 
@@ -171,14 +182,17 @@ module Wheerd::Plaster
     def coplanar_faces(entities, plane, transformation = Geom::Transformation.new)
       faces = []
       entities.each { |f|
+        next unless f.valid?
+        next unless f.visible? && f.layer.visible?
         if f.is_a?(Sketchup::Face)
-          if f.visible?
-            points = f.outer_loop.vertices.map { |v|
-              v.position.transform(transformation)
-            }
-            if points.all? { |p| p.on_plane? plane }
-              faces << points
-            end
+          normal = f.normal.transform(transformation)
+          next unless normal.parallel? plane[1]
+          points = f.outer_loop.vertices.map { |v|
+            v.position.transform(transformation)
+          }
+          if points.all? { |p| p.on_plane? plane }
+            reverse = f.normal != plane[1]
+            faces << (reverse ? points.reverse : points)
           end
         elsif f.is_a?(Sketchup::Group)
           faces.concat(coplanar_faces(f.entities, plane, transformation * f.transformation))
@@ -201,6 +215,12 @@ module Wheerd::Plaster
       entities.grep(Sketchup::Edge).to_a.each do |e|
         merge_connected_faces(e)
       end
+    end
+
+    def relevant_edges(entities)
+      entities.grep(Sketchup::Edge).
+        select { |e| e.faces.size == 1 }.
+        map { |e| [e.start.position, e.end.position] }
     end
 
     def get_area(loop)
