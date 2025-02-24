@@ -20,24 +20,19 @@ module Wheerd::Plaster
       begin
         grp = model.entities.add_group
         inner = grp.entities.add_group
+        inner2 = inner.entities.add_group
         other_faces.each { |f|
           if get_area(f) > 0
-            inner.entities.add_face(*f)
+            inner2.entities.add_face(*f)
           end
         }
-        inner.explode
+        inner2.explode
         @bounds = grp.bounds
 
-        edges = relevant_edges(grp.entities)
-        grp.entities.clear!
+        remove_inner_edges(inner.entities)
+        inner.explode
 
-        edges.each { |e|
-          edge = grp.entities.add_edges(e).first
-          edge.find_faces
-        }
-        grp.entities.grep(Sketchup::Face) { |f|
-          f.erase! if f.loops.size == 1
-        }
+        repair_splits(grp.entities)
 
         faces = grp.entities.grep(Sketchup::Face).to_a
         @plaster_faces = []
@@ -171,6 +166,13 @@ module Wheerd::Plaster
         f.pushpull(thickness)
       end
 
+      grp.entities.grep(Sketchup::Edge).to_a.each { |e|
+        next unless e.faces.size == 2
+        if e.faces[0].normal.parallel?(e.faces[1].normal)
+          e.erase!
+        end
+      }
+
       model.close_active until model.entities == model.active_entities
       model.selection.clear
       model.selection.add grp
@@ -231,6 +233,23 @@ module Wheerd::Plaster
       ensure
         grp.erase!
       end
+    end
+
+    def repair_splits(entities)
+      obsolete_vertices = []
+      return if entities.length == 0
+      vertices = entities.grep(Sketchup::Edge).flat_map { |e| e.vertices }.uniq
+      for vertex in vertices
+        next unless vertex.edges.length == 2
+        v1 = vertex.edges[0].other_vertex(vertex)
+        v2 = vertex.edges[1].other_vertex(vertex)
+        dir1 = v1.position - vertex.position
+        dir2 = v2.position - vertex.position
+        if dir1.parallel?(dir2)
+          obsolete_vertices << vertex
+        end
+      end
+      entities.erase_entities(obsolete_vertices) unless obsolete_vertices.empty?
     end
 
     def merge_connected_faces(edge)
