@@ -19,11 +19,13 @@ module Wheerd::Plaster
       model.start_operation("Find Faces", true)
       begin
         grp = model.entities.add_group
+        inner = grp.entities.add_group
         other_faces.each { |f|
           if get_area(f) > 0
-            grp.entities.add_face(*f)
+            inner.entities.add_face(*f)
           end
         }
+        inner.explode
         @bounds = grp.bounds
         remove_inner_edges(grp.entities)
         faces = grp.entities.grep(Sketchup::Face).to_a
@@ -149,7 +151,7 @@ module Wheerd::Plaster
         grp.entities.add_face(*face[0])
         face[1].each do |hole|
           holeFace = grp.entities.add_face(*hole)
-          holeFace.erase!
+          holeFace.erase! if holeFace != nil
         end
       end
 
@@ -196,12 +198,9 @@ module Wheerd::Plaster
     end
 
     def remove_inner_edges(entities)
-      inner_edges = []
-      entities.grep(Sketchup::Edge) do |f|
-        inner_edges << f if f.faces.size >= 2
+      entities.grep(Sketchup::Edge).to_a.each do |e|
+        merge_connected_faces(e)
       end
-      entities.erase_entities(inner_edges)
-      inner_edges.size
     end
 
     def get_area(loop)
@@ -212,6 +211,44 @@ module Wheerd::Plaster
       ensure
         grp.erase!
       end
+    end
+
+    def merge_connected_faces(edge)
+      return false unless edge.valid? && edge.is_a?(Sketchup::Edge)
+      return false unless edge.faces.size == 2
+
+      f1, f2 = edge.faces
+      return false unless f1.normal.parallel?(f2.normal)
+      return false unless edge_safe_to_merge?(edge)
+      return false unless faces_coplanar?(f1, f2)
+
+      edge.erase!
+      if f1.deleted? && f2.deleted?
+        raise "Face merge resulted in lost geometry!"
+      end
+
+      true
+    end
+
+    def faces_coplanar?(face1, face2)
+      vertices = face1.vertices + face2.vertices
+      plane = Geom.fit_plane_to_points(vertices)
+      vertices.all? { |v| v.position.on_plane?(plane) }
+    end
+
+    def edge_safe_to_merge?(edge)
+      edge.faces.all? { |face| face_safe_to_merge?(face) }
+    end
+
+    def face_safe_to_merge?(face)
+      stack = face.outer_loop.edges
+      edge = stack.shift
+      direction = edge.line[1]
+      until stack.empty?
+        edge = stack.shift
+        return true unless edge.line[1].parallel?(direction)
+      end
+      false
     end
 
     def is_gap?(loop)
