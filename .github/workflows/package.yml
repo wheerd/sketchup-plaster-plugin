@@ -20,11 +20,14 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Create Zip File
+      - name: Install zip
         uses: montudor/action-zip@v1
         if: github.head_ref == null
-        with:
-          args: zip -qq -r plaster-plugin.rbz src
+
+      - name: Create rbz file
+        if: github.head_ref == null
+        run: zip -qq -r ../plaster-plugin.rbz *
+        working-directory: src
 
       - name: Update latest tag
         uses: EndBug/latest-tag@v1.6.2
