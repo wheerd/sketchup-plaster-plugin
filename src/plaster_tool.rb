@@ -18,7 +18,7 @@ module Wheerd
     unless file_loaded?(__FILE__)
       ex = SketchupExtension.new("Plaster Tool", File.join(PATH, "main"))
       ex.description = "Plaster Tool"
-      ex.version = "1.0.0"
+      ex.version = "1.2.1"
       ex.copyright = "Wheerd © 2025"
       ex.creator = "Wheerd"
       Sketchup.register_extension(ex, true)
