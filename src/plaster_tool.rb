@@ -1,3 +1,5 @@
+# encoding: UTF-8
+
 require "sketchup"
 require "extensions"
 
@@ -16,13 +18,15 @@ module Wheerd
     PATH = File.join(PATH_ROOT, folder_name).freeze
 
     unless file_loaded?(__FILE__)
-      ex = SketchupExtension.new("Plaster Tool", File.join(PATH, "main"))
-      ex.description = "Plaster Tool"
-      ex.version = "1.2.1"
-      ex.copyright = "Wheerd © 2025"
-      ex.creator = "Wheerd"
-      Sketchup.register_extension(ex, true)
-      file_loaded(__FILE__)
+      loader = File.join(PATH, "loader")
+      @ex = SketchupExtension.new("Plaster Tool", loader)
+      @ex.description = "Plaster Tool"
+      @ex.version = "1.2.1"
+      @ex.copyright = "Wheerd © 2025"
+      @ex.creator = "Wheerd"
+      Sketchup.register_extension(@ex, true)
     end
   end
 end
+
+file_loaded(__FILE__)

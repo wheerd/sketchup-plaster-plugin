@@ -1,4 +1,4 @@
-require "sketchup"
+# encoding: UTF-8
 
 module Wheerd::Plaster
   class PlasterTool
