@@ -32,8 +32,6 @@ module Wheerd::Plaster
         remove_inner_edges(inner.entities)
         inner.explode
 
-        repair_splits(grp.entities)
-
         faces = grp.entities.grep(Sketchup::Face).to_a
         @plaster_faces = []
 
@@ -235,23 +233,6 @@ module Wheerd::Plaster
       end
     end
 
-    def repair_splits(entities)
-      obsolete_vertices = []
-      return if entities.length == 0
-      vertices = entities.grep(Sketchup::Edge).flat_map { |e| e.vertices }.uniq
-      for vertex in vertices
-        next unless vertex.edges.length == 2
-        v1 = vertex.edges[0].other_vertex(vertex)
-        v2 = vertex.edges[1].other_vertex(vertex)
-        dir1 = v1.position - vertex.position
-        dir2 = v2.position - vertex.position
-        if dir1.parallel?(dir2)
-          obsolete_vertices << vertex
-        end
-      end
-      entities.erase_entities(obsolete_vertices) unless obsolete_vertices.empty?
-    end
-
     def merge_connected_faces(edge)
       return false unless edge.valid? && edge.is_a?(Sketchup::Edge)
       return false unless edge.faces.size == 2
@@ -263,7 +244,7 @@ module Wheerd::Plaster
 
       edge.erase!
       if f1.deleted? && f2.deleted?
-        raise "Face merge resulted in lost geometry!"
+        puts "Face merge resulted in lost geometry!"
       end
 
       true
