@@ -4,6 +4,8 @@ module Wheerd::Plaster
   class PlasterTool
     AREA_THRESHOLD = 0.3.m * 0.3.m
     GAP_THRESHOLD = 0.15.m
+    SIMPLIFY_THRESHOLD = 1.mm
+    EMPTY_AREA = 2.cm * 2.cm
 
     # @param Sketchup::Face face
     def initialize()
@@ -49,16 +51,22 @@ module Wheerd::Plaster
         @plaster_faces = []
 
         faces.each { |f|
-          next if f.outer_loop.vertices.size < 3
           outer = f.outer_loop.vertices.map { |v| v.position }
+          outer = simplify_polygon(outer)
+          next if outer.size < 3
+          next if get_area(outer) < EMPTY_AREA
           holes = []
           f.loops.each { |l|
             if !l.outer? && l.vertices.size > 2
-              inner = l.vertices.map { |v| v.position }
-              area = get_area(inner)
-              if area > AREA_THRESHOLD && !is_gap?(inner)
-                holes << inner
-              end
+              inners = l.vertices.map { |v| v.position }
+              inners = split_polygons_with_shared_vertex(inners)
+              inners.each { |inner|
+                inner = simplify_polygon(inner)
+                area = get_area(inner)
+                if area > AREA_THRESHOLD && !is_gap?(inner)
+                  holes << inner
+                end
+              }
             end
           }
           @plaster_faces << [outer, holes]
@@ -102,6 +110,7 @@ module Wheerd::Plaster
     end
 
     def onLButtonDown(flags, x, y, view)
+      return if @normal
       ph = view.pick_helper
       ph.do_pick(x, y)
       if ph.picked_face != nil
@@ -216,7 +225,7 @@ module Wheerd::Plaster
       angle = @normal.angle_between(view.camera.direction)
       thickness = angle < Math::PI / 2 ? -@thickness : @thickness
 
-      grp = model.entities.add_group
+      grp = model.active_entities.add_group
       @plaster_faces.each do |face|
         grp.entities.add_face(*face[0])
         face[1].each do |hole|
@@ -237,7 +246,6 @@ module Wheerd::Plaster
         end
       }
 
-      model.close_active until model.entities == model.active_entities
       model.selection.clear
       model.selection.add grp
 
@@ -290,6 +298,7 @@ module Wheerd::Plaster
     end
 
     def get_area(loop)
+      return 0 if loop.size < 3
       grp = Sketchup.active_model.entities.add_group
       face = grp.entities.add_face(loop)
       begin
@@ -348,6 +357,46 @@ module Wheerd::Plaster
         return false
       ensure
         grp.erase!
+      end
+    end
+
+    def split_polygons_with_shared_vertex(points)
+      return [] if points.size < 3
+      for i1 in 0..(points.size - 2)
+        for i2 in (points.size - 1)..(i1 + 1)
+          d = points[i1].distance(points[i2])
+          if d < SIMPLIFY_THRESHOLD
+            part1 = points[0..i1] + points[(i2 + 1)..-1]
+            part2 = points[(i1 + 1)..i2]
+            return split_polygons_with_shared_vertex(part1) + split_polygons_with_shared_vertex(part2)
+          end
+        end
+      end
+      [points]
+    end
+
+    def simplify_polygon(points)
+      return points if points.size < 3
+
+      maxDistance = 0
+      index = 0
+      line = [points.first, points.last]
+
+      for i in 1..(points.size - 1)
+        d = points[i].distance_to_line(line)
+        if d > maxDistance
+          index = i
+          maxDistance = d
+        end
+      end
+
+      if maxDistance >= SIMPLIFY_THRESHOLD
+        part1 = simplify_polygon(points[0..index])
+        part2 = simplify_polygon(points[index..-1])
+
+        part1[0..-2] + part2
+      else
+        [points.first, points.last]
       end
     end
   end # class
