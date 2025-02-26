@@ -6,9 +6,22 @@ module Wheerd::Plaster
     GAP_THRESHOLD = 0.15.m
 
     # @param Sketchup::Face face
-    def initialize(face, transform)
+    def initialize()
+      reset
+      face_selection
+    end
+
+    def face_selection
+      model = Sketchup.active_model
+      transform = model.active_path ? Sketchup::InstancePath.new(model.active_path).transformation : Geom::Transformation.new
+      selection = model.selection
+      if selection.size == 1 && selection[0].is_a?(Sketchup::Face)
+        build_plaster_area(selection[0], transform)
+      end
+    end
+
+    def build_plaster_area(face, transform)
       @normal = face.normal.transform(transform)
-      @thickness = 10
 
       model = Sketchup.active_model
       entities = model.entities
@@ -88,9 +101,28 @@ module Wheerd::Plaster
       commit
     end
 
+    def onLButtonDown(flags, x, y, view)
+      ph = view.pick_helper
+      ph.do_pick(x, y)
+      if ph.picked_face != nil
+        face = ph.picked_face
+        i = ph.count.times.select { |i| ph.leaf_at(i) == face }.first
+        trans = ph.transformation_at(i)
+        build_plaster_area(face, trans)
+        update_ui
+        view.invalidate
+      end
+    end
+
     # @param [Sketchup::View] view
     def onCancel(_reason, view)
+      plaster_mode = @normal != nil
       reset
+      if plaster_mode
+        update_ui
+      else
+        Sketchup.active_model.tools.pop_tool
+      end
       view.invalidate
     end
 
@@ -108,37 +140,71 @@ module Wheerd::Plaster
       @bounds
     end
 
+    def onMouseMove(flags, x, y, view)
+      ph = view.pick_helper
+      ph.do_pick(x, y)
+      if ph.picked_face != nil || @hover_polygon != nil
+        face = ph.picked_face
+        if face != nil
+          i = ph.count.times.select { |i| ph.leaf_at(i) == face }.first
+          trans = ph.transformation_at(i)
+          @hover_polygon = face.outer_loop.vertices.map { |v| v.position.transform(trans) }
+        else
+          @hover_polygon = nil
+        end
+        view.invalidate
+      end
+    end
+
     # @param [Sketchup::View] view
     def draw(view)
-      view.line_width = 3
-      angle = @normal.angle_between(view.camera.direction)
-      scale = angle < Math::PI / 2 ? -@thickness : @thickness
-      offset = Geom::Transformation.translation(@normal.transform(scale))
-      @plaster_faces.each { |f|
-        outer = f[0]
-        view.drawing_color = "blue"
-        view.draw(GL_LINE_LOOP, outer)
-        offsetOuter = outer.map { |v| v.transform(offset) }
-        view.draw(GL_LINE_LOOP, offsetOuter)
-        f[1].each { |loop|
-          view.drawing_color = "orange"
-          view.draw(GL_LINE_LOOP, loop)
-          offsetLoop = loop.map { |v| v.transform(offset) }
-          view.draw(GL_LINE_LOOP, offsetLoop)
+      if @normal != nil
+        view.line_width = 3
+        angle = @normal.angle_between(view.camera.direction)
+        scale = angle < Math::PI / 2 ? -@thickness.to_f : @thickness.to_f
+        offset = Geom::Transformation.translation(@normal.transform(scale))
+        @plaster_faces.each { |f|
+          outer = f[0]
+          view.drawing_color = "blue"
+          view.draw(GL_LINE_LOOP, outer)
+          offsetOuter = outer.map { |v| v.transform(offset) }
+          view.draw(GL_LINE_LOOP, offsetOuter)
+          f[1].each { |loop|
+            view.drawing_color = "orange"
+            view.draw(GL_LINE_LOOP, loop)
+            offsetLoop = loop.map { |v| v.transform(offset) }
+            view.draw(GL_LINE_LOOP, offsetLoop)
+          }
         }
-      }
+      elsif @hover_polygon
+        view.line_width = 3
+        view.drawing_color = "lightblue"
+        view.draw(GL_POLYGON, @hover_polygon)
+        view.drawing_color = "blue"
+        view.draw(GL_LINE_LOOP, @hover_polygon)
+      end
     end
 
     private
 
     def update_ui
-      Sketchup.status_text = "Create a plaster"
-      Sketchup.vcb_label = "Thickness"
-      Sketchup.vcb_value = @thickness
+      if @normal != nil
+        Sketchup.status_text = "Enter thickness or press enter to create the plaster"
+        Sketchup.vcb_label = "Thickness of plaster"
+        Sketchup.vcb_value = @thickness.to_s
+      else
+        Sketchup.status_text = "Select a face to determine the plane of the plaster"
+        Sketchup.vcb_label = ""
+        Sketchup.vcb_value = ""
+      end
     end
 
     def reset
-      Sketchup.active_model.tools.pop_tool
+      @thickness = 0.1.m
+      @hover_polygon = nil
+      @normal = nil
+      @plane = nil
+      @bounds = Geom::BoundingBox.new
       @plaster_faces = []
     end
 

@@ -10,9 +10,6 @@ module Wheerd::Plaster
     cmd.status_bar_text = "Create plaster from face"
     cmd.small_icon = File.join(PATH, "icon.svg")
     cmd.large_icon = File.join(PATH, "icon.svg")
-    cmd.set_validation_proc {
-      is_active? ? MF_ENABLED : MF_GRAYED
-    }
     cmd
   end
 
@@ -22,15 +19,8 @@ module Wheerd::Plaster
   end
 
   def self.activate_plaster_tool
-    model = Sketchup.active_model
-    transform = model.active_path ? Sketchup::InstancePath.new(model.active_path).transformation : Geom::Transformation.new
-    selection = model.selection
-    unless selection.size == 1 && selection[0].is_a?(Sketchup::Face)
-      UI.messagebox("Select a single face to create plaster from.")
-      return
-    end
-    tool = PlasterTool.new(selection[0], transform)
-    model.select_tool(tool)
+    tool = PlasterTool.new()
+    Sketchup.active_model.select_tool(tool)
   end
 
   def self.setup_ui
