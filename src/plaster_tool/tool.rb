@@ -2,11 +2,6 @@
 
 module Wheerd::Plaster
   class PlasterTool
-    AREA_THRESHOLD = 0.3.m * 0.3.m
-    GAP_THRESHOLD = 0.15.m
-    SIMPLIFY_THRESHOLD = 1.mm
-    EMPTY_AREA = 2.cm * 2.cm
-
     # @param Sketchup::Face face
     def initialize()
       reset
@@ -54,7 +49,7 @@ module Wheerd::Plaster
           outer = f.outer_loop.vertices.map { |v| v.position }
           outer = simplify_polygon(outer)
           next if outer.size < 3
-          next if get_area(outer) < EMPTY_AREA
+          next if get_area(outer) < Settings.plaster_min_area
           holes = []
           f.loops.each { |l|
             if !l.outer? && l.vertices.size > 2
@@ -63,7 +58,7 @@ module Wheerd::Plaster
               inners.each { |inner|
                 inner = simplify_polygon(inner)
                 area = get_area(inner)
-                if area > AREA_THRESHOLD && !is_gap?(inner)
+                if area > Settings.hole_min_area && !is_gap?(inner)
                   holes << inner
                 end
               }
@@ -209,7 +204,7 @@ module Wheerd::Plaster
     end
 
     def reset
-      @thickness = 0.1.m
+      @thickness = Settings.default_thickness
       @hover_polygon = nil
       @normal = nil
       @plane = nil
@@ -352,7 +347,7 @@ module Wheerd::Plaster
       begin
         lengths = face.edges.map { |e| e.length }.sort
         if lengths.size == 4 && lengths[0] == lengths[1] && lengths[2] == lengths[3]
-          return lengths[0] < GAP_THRESHOLD
+          return lengths[0] < Settings.gap_max_width
         end
         return false
       ensure
@@ -365,7 +360,7 @@ module Wheerd::Plaster
       for i1 in 0..(points.size - 2)
         for i2 in (points.size - 1)..(i1 + 1)
           d = points[i1].distance(points[i2])
-          if d < SIMPLIFY_THRESHOLD
+          if d < Settings.simplify_tolerance
             part1 = points[0..i1] + points[(i2 + 1)..-1]
             part2 = points[(i1 + 1)..i2]
             return split_polygons_with_shared_vertex(part1) + split_polygons_with_shared_vertex(part2)
@@ -390,7 +385,7 @@ module Wheerd::Plaster
         end
       end
 
-      if maxDistance >= SIMPLIFY_THRESHOLD
+      if maxDistance >= Settings.simplify_tolerance
         part1 = simplify_polygon(points[0..index])
         part2 = simplify_polygon(points[index..-1])
 

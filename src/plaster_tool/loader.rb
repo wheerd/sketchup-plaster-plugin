@@ -2,6 +2,7 @@
 
 module Wheerd
   module Plaster
+    Sketchup.require File.join(PATH, "settings")
     Sketchup.require File.join(PATH, "tool")
     Sketchup.require File.join(PATH, "gui")
   end
