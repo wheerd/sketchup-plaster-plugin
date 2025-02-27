@@ -20,6 +20,16 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Set version
+        uses: jacobtomlinson/gha-find-replace@v3
+        with:
+          find: '"dev"'
+          replace: '"${{ github.ref_name }}"'
+          include: src/extension.json
+
+      - name: Show extension.json
+        run: cat src/extension.json
+
       - name: Install zip
         uses: montudor/action-zip@v1
         if: github.head_ref == null

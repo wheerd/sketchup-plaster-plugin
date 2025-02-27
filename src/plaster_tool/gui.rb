@@ -2,11 +2,11 @@
 
 module Wheerd::Plaster
   def self.create_plaster_cmd
-    cmd = UI::Command.new("Plaster Tool") {
+    cmd = UI::Command.new(EXTENSION[:name]) {
       activate_plaster_tool
     }
-    cmd.tooltip = "Plaster Tool"
-    cmd.menu_text = "Plaster Tool"
+    cmd.tooltip = EXTENSION[:name]
+    cmd.menu_text = EXTENSION[:name]
     cmd.status_bar_text = "Create plaster from face"
     cmd.small_icon = File.join(PATH, "icon.svg")
     cmd.large_icon = File.join(PATH, "icon.svg")
@@ -27,13 +27,13 @@ module Wheerd::Plaster
     cmd_activate_plaster_tool = create_plaster_cmd
 
     menu = UI.menu("Plugins")
-    submenu = menu.add_submenu("Plaster Tool")
+    submenu = menu.add_submenu(EXTENSION[:name])
     submenu.add_item cmd_activate_plaster_tool
     submenu.add_item("Settings") {
       Settings.show_dialog
     }
 
-    toolbar = UI::Toolbar.new("Plaster Tool")
+    toolbar = UI::Toolbar.new(EXTENSION[:name])
     toolbar.add_item cmd_activate_plaster_tool
     toolbar.restore
 

@@ -17,13 +17,17 @@ module Wheerd
     # Path to the support folder.
     PATH = File.join(PATH_ROOT, folder_name).freeze
 
+    extension_json_file = File.join(PATH_ROOT, "extension.json")
+    extension_json = File.read(extension_json_file)
+    EXTENSION = ::JSON.parse(extension_json, symbolize_names: true).freeze
+
     unless file_loaded?(__FILE__)
       loader = File.join(PATH, "loader")
-      @ex = SketchupExtension.new("Plaster Tool", loader)
-      @ex.description = "Plaster Tool"
-      @ex.version = "1.2.2"
-      @ex.copyright = "Wheerd © 2025"
-      @ex.creator = "Wheerd"
+      @ex = SketchupExtension.new(EXTENSION[:name], loader)
+      @ex.description = EXTENSION[:description]
+      @ex.version = EXTENSION[:version]
+      @ex.copyright = EXTENSION[:copyright]
+      @ex.creator = EXTENSION[:creator]
       Sketchup.register_extension(@ex, true)
     end
   end
