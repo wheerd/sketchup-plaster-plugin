@@ -33,7 +33,7 @@ module Wheerd::Plaster
       options = {
         :dialog_title => "Plaster Tool Settings",
         :style => UI::HtmlDialog::STYLE_DIALOG,
-        :width => 500,
+        :width => 800,
         :height => 600,
       }
       dialog = UI::HtmlDialog.new(options)

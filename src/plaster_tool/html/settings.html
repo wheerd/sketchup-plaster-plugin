@@ -6,11 +6,17 @@
     text-align: right;
   }
 
-  .length-unit, .area-unit {
+  .length-unit,
+  .area-unit {
     padding: 0.05em 0.2em 0.05em 0.2em;
     width: 2em;
     text-align: center;
     height: 3em;
+  }
+
+  .form-text {
+    margin-top: 0;
+    margin-bottom: .4rem;
   }
 </style>
 
@@ -19,7 +25,12 @@
     <div class="modal-content container" style="height: 100%; border-style: none; padding: 0; margin: 0">
       <div class="modal-body" style="margin: 0; background: none;">
         <div class="row">
-          <label for="default_thickness" class="col-8 col-form-label">Default Thickness</label>
+          <div class="col-8">
+            <label for="default_thickness" class="form-label">Default Thickness</label>
+            <div class="form-text">
+              The default thickness of the plaster layer. A custom thickness can be entered while using the tool
+            </div>
+          </div>
           <div class="col-4 input-group">
             <input class="form-control" type="number" id="default_thickness" min="0" step="0.001">
             <span class="input-group-text length-unit">X</span>
@@ -27,7 +38,12 @@
         </div>
 
         <div class="row">
-          <label for="gap_max_width" class="col-8 col-form-label">Maximum Gap Width</label>
+          <div class="col-8">
+            <label for="gap_max_width" class="form-label">Maximum Gap Width</label>
+            <div class="form-text">
+              A rectangular gap smaller than this in one dimension will still be covered with plaster.
+            </div>
+          </div>
           <div class="col-4 input-group">
             <input class="form-control" type="number" id="gap_max_width" min="0" step="0.001">
             <span class="input-group-text length-unit">X</span>
@@ -35,7 +51,12 @@
         </div>
 
         <div class="row">
-          <label for="simplify_tolerance" class="col-8 col-form-label">Simplify Tolerance</label>
+          <div class="col-8">
+            <label for="simplify_tolerance" class="form-label">Simplify Tolerance</label>
+            <div class="form-text">
+              Cleans up redundant vertices from the plaster that are on or close to existing edge.
+            </div>
+          </div>
           <div class="col-4 input-group">
             <input class="form-control" type="number" id="simplify_tolerance" min="0" step="0.001">
             <span class="input-group-text length-unit">X</span>
@@ -43,7 +64,12 @@
         </div>
 
         <div class="row">
-          <label for="plane_tolerance" class="col-8 col-form-label">Plane Tolerance</label>
+          <div class="col-8">
+            <label for="plane_tolerance" class="form-label">Plane Tolerance</label>
+            <div class="form-text">
+              Maximum divergence from the plane of the selected face that will still be added to the plaster surface.
+            </div>
+          </div>
           <div class="col-4 input-group">
             <input class="form-control" type="number" id="plane_tolerance" min="0" step="0.001">
             <span class="input-group-text length-unit">X</span>
@@ -51,7 +77,12 @@
         </div>
 
         <div class="row">
-          <label for="hole_min_area" class="col-8 col-form-label">Hole Minimum Area</label>
+          <div class="col-8">
+            <label for="hole_min_area" class="form-label">Hole Minimum Area</label>
+            <div class="form-text">
+              Holes in the surface smaller than this will be covered by plaster.
+            </div>
+          </div>
           <div class="col-4 input-group">
             <input class="form-control" type="number" id="hole_min_area" min="0" step="0.001">
             <span class="input-group-text area-unit">X</span>
@@ -59,7 +90,12 @@
         </div>
 
         <div class="row">
-          <label for="plaster_min_area" class="col-8 col-form-label">Plaster Minimum Area</label>
+          <div class="col-8">
+            <label for="plaster_min_area" class="form-label">Plaster Minimum Area</label>
+            <div class="form-text">
+              Unconnected surfaces smaller than this will not receive plaster.
+            </div>
+          </div>
           <div class="col-4 input-group">
             <input class="form-control" type="number" id="plaster_min_area" min="0" step="0.0001">
             <span class="input-group-text area-unit">X</span>
