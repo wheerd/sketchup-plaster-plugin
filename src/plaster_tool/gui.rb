@@ -27,7 +27,11 @@ module Wheerd::Plaster
     cmd_activate_plaster_tool = create_plaster_cmd
 
     menu = UI.menu("Plugins")
-    menu.add_item cmd_activate_plaster_tool
+    submenu = menu.add_submenu("Plaster Tool")
+    submenu.add_item cmd_activate_plaster_tool
+    submenu.add_item("Settings") {
+      Settings.show_dialog
+    }
 
     toolbar = UI::Toolbar.new("Plaster Tool")
     toolbar.add_item cmd_activate_plaster_tool

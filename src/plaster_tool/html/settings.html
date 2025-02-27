@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<link href="../vendor/modus/modus.min.css" rel="stylesheet">
+<style>
+  input {
+    text-align: right;
+  }
+
+  .length-unit, .area-unit {
+    padding: 0.05em 0.2em 0.05em 0.2em;
+    width: 2em;
+    text-align: center;
+    height: 3em;
+  }
+</style>
+
+<body class="bg-panel-background" style="margin: 0; padding: 0">
+  <form id="form">
+    <div class="modal-content container" style="height: 100%; border-style: none; padding: 0; margin: 0">
+      <div class="modal-body" style="margin: 0; background: none;">
+        <div class="row">
+          <label for="default_thickness" class="col-8 col-form-label">Default Thickness</label>
+          <div class="col-4 input-group">
+            <input class="form-control" type="number" id="default_thickness" min="0" step="0.001">
+            <span class="input-group-text length-unit">X</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="gap_max_width" class="col-8 col-form-label">Maximum Gap Width</label>
+          <div class="col-4 input-group">
+            <input class="form-control" type="number" id="gap_max_width" min="0" step="0.001">
+            <span class="input-group-text length-unit">X</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="simplify_tolerance" class="col-8 col-form-label">Simplify Tolerance</label>
+          <div class="col-4 input-group">
+            <input class="form-control" type="number" id="simplify_tolerance" min="0" step="0.001">
+            <span class="input-group-text length-unit">X</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="hole_min_area" class="col-8 col-form-label">Hole Minimum Area</label>
+          <div class="col-4 input-group">
+            <input class="form-control" type="number" id="hole_min_area" min="0" step="0.001">
+            <span class="input-group-text area-unit">X</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <label for="plaster_min_area" class="col-8 col-form-label">Plaster Minimum Area</label>
+          <div class="col-4 input-group">
+            <input class="form-control" type="number" id="plaster_min_area" min="0" step="0.001">
+            <span class="input-group-text area-unit">X</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" onclick="save()">
+          Save
+        </button>
+      </div>
+    </div>
+  </form>
+  <script>
+    function updateSettings(settings) {
+      for (var key in settings) {
+        document.getElementById(key).value = settings[key];
+      }
+    }
+
+    function updateUnits(length, area) {
+      for (var element of document.getElementsByClassName('length-unit')) {
+        element.innerHTML = length;
+      }
+      for (var element of document.getElementsByClassName('area-unit')) {
+        element.innerHTML = area;
+      }
+    }
+
+    function getSettings() {
+      var form = document.getElementById('form');
+      var object = {};
+      for (var element of form.elements) {
+        object[element.id] = +element.value;
+      }
+      return object;
+    }
+
+    function save() {
+      sketchup.save(getSettings());
+    }
+
+    sketchup.ready();
+  </script>
+</body>
+
+</html>
