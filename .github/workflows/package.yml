@@ -26,7 +26,7 @@ jobs:
         with:
           find: '"dev"'
           replace: '"latest@${{ github.sha }}"'
-          include: src/extension.json
+          include: src/plaster_tool/extension.json
 
       - name: Set version for tag
         uses: jacobtomlinson/gha-find-replace@v3
@@ -34,10 +34,10 @@ jobs:
         with:
           find: '"dev"'
           replace: '"${{ github.ref_name }}"'
-          include: src/extension.json
+          include: src/plaster_tool/extension.json
 
       - name: Show extension.json
-        run: cat src/extension.json
+        run: cat src/plaster_tool/extension.json
 
       - name: Install zip
         uses: montudor/action-zip@v1

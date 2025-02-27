@@ -17,7 +17,7 @@ module Wheerd
     # Path to the support folder.
     PATH = File.join(PATH_ROOT, folder_name).freeze
 
-    extension_json_file = File.join(PATH_ROOT, "extension.json")
+    extension_json_file = File.join(PATH, "extension.json")
     extension_json = File.read(extension_json_file)
     EXTENSION = ::JSON.parse(extension_json, symbolize_names: true).freeze
 
