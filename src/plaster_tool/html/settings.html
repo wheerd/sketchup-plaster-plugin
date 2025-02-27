@@ -61,13 +61,16 @@
         <div class="row">
           <label for="plaster_min_area" class="col-8 col-form-label">Plaster Minimum Area</label>
           <div class="col-4 input-group">
-            <input class="form-control" type="number" id="plaster_min_area" min="0" step="0.001">
+            <input class="form-control" type="number" id="plaster_min_area" min="0" step="0.0001">
             <span class="input-group-text area-unit">X</span>
           </div>
         </div>
       </div>
 
       <div class="modal-footer">
+        <button type="button" class="btn btn-danger" onclick="sketchup.reset()">
+          Reset to Defaults
+        </button>
         <button type="button" class="btn btn-primary" onclick="save()">
           Save
         </button>

@@ -11,12 +11,19 @@ module Wheerd::Plaster
     DEFAULT_THICKNESS = "default_thickness".freeze
     PLANE_TOLERANCE = "plane_tolerance".freeze
 
-    @hole_min_area = Sketchup.read_default(SECTION, HOLE_MIN_AREA, (0.3.m * 0.3.m).to_f).to_l
-    @gap_max_width = Sketchup.read_default(SECTION, GAP_MAX_WIDTH, 0.15.m.to_f).to_l
-    @simplify_tolerance = Sketchup.read_default(SECTION, SIMPLIFY_TOLERANCE, 1.mm.to_f).to_l
-    @plaster_min_area = Sketchup.read_default(SECTION, PLASTER_MIN_AREA, (2.cm * 2.cm).to_f).to_l
-    @default_thickness = Sketchup.read_default(SECTION, DEFAULT_THICKNESS, 10.cm.to_f).to_l
-    @plane_tolerance = Sketchup.read_default(SECTION, PLANE_TOLERANCE, 0).to_l
+    HOLE_MIN_AREA_DEFAULT = (0.3.m * 0.3.m).to_f
+    GAP_MAX_WIDTH_DEFAULT = 0.15.m.to_f
+    SIMPLIFY_TOLERANCE_DEFAULT = 1.mm.to_f
+    PLASTER_MIN_AREA_DEFAULT = (0.02.m * 0.02.m).to_f
+    DEFAULT_THICKNESS_DEFAULT = 10.cm.to_f
+    PLANE_TOLERANCE_DEFAULT = 2.mm.to_f
+
+    @hole_min_area = Sketchup.read_default(SECTION, HOLE_MIN_AREA, HOLE_MIN_AREA_DEFAULT).to_l
+    @gap_max_width = Sketchup.read_default(SECTION, GAP_MAX_WIDTH, GAP_MAX_WIDTH_DEFAULT).to_l
+    @simplify_tolerance = Sketchup.read_default(SECTION, SIMPLIFY_TOLERANCE, SIMPLIFY_TOLERANCE_DEFAULT).to_l
+    @plaster_min_area = Sketchup.read_default(SECTION, PLASTER_MIN_AREA, PLASTER_MIN_AREA_DEFAULT).to_l
+    @default_thickness = Sketchup.read_default(SECTION, DEFAULT_THICKNESS, DEFAULT_THICKNESS_DEFAULT).to_l
+    @plane_tolerance = Sketchup.read_default(SECTION, PLANE_TOLERANCE, PLANE_TOLERANCE_DEFAULT).to_l
 
     attr_reader :hole_min_area, :gap_max_width, :simplify_tolerance, :plaster_min_area, :default_thickness, :plane_tolerance
 
@@ -30,7 +37,6 @@ module Wheerd::Plaster
         :height => 600,
       }
       dialog = UI::HtmlDialog.new(options)
-      puts HTML_FILE
       dialog.set_file(HTML_FILE)
       dialog.center
       dialog
@@ -44,7 +50,13 @@ module Wheerd::Plaster
       }
       @dialog.add_action_callback("save") { |_, data|
         update_settings(data)
+        save
         @dialog.close
+        nil
+      }
+      @dialog.add_action_callback("reset") {
+        reset
+        save
         nil
       }
       @dialog.visible? ? @dialog.bring_to_front : @dialog.show
@@ -65,6 +77,17 @@ module Wheerd::Plaster
       @dialog.execute_script("updateUnits('#{length_text}', '#{area_text}')")
     end
 
+    def reset
+      @hole_min_area = HOLE_MIN_AREA_DEFAULT.to_l
+      @gap_max_width = GAP_MAX_WIDTH_DEFAULT.to_l
+      @simplify_tolerance = SIMPLIFY_TOLERANCE_DEFAULT.to_l
+      @plaster_min_area = PLASTER_MIN_AREA_DEFAULT.to_l
+      @default_thickness = DEFAULT_THICKNESS_DEFAULT.to_l
+      @plane_tolerance = PLANE_TOLERANCE_DEFAULT.to_l
+
+      update_dialog
+    end
+
     def update_settings(data)
       @hole_min_area = (data["hole_min_area"] * area_factor).to_l
       @gap_max_width = (data["gap_max_width"] * length_factor).to_l
@@ -72,7 +95,9 @@ module Wheerd::Plaster
       @plaster_min_area = (data["plaster_min_area"] * area_factor).to_l
       @default_thickness = (data["default_thickness"] * length_factor).to_l
       @plane_tolerance = (data["plane_tolerance"] * length_factor).to_l
+    end
 
+    def save
       Sketchup.write_default(SECTION, HOLE_MIN_AREA, @hole_min_area.to_f)
       Sketchup.write_default(SECTION, GAP_MAX_WIDTH, @gap_max_width.to_f)
       Sketchup.write_default(SECTION, SIMPLIFY_TOLERANCE, @simplify_tolerance.to_f)
@@ -157,22 +182,12 @@ module Wheerd::Plaster
       end
     end
 
-    def area_no_unit_str(number)
-      Sketchup.format_area(number).sub(area_text, "")
-    end
-
     def area_no_unit_float(number)
-      dec_sep = Sketchup::RegionalSettings.decimal_separator
-      area_no_unit_str(number).tr(dec_sep, ".").to_f
-    end
-
-    def length_no_unit_str(number)
-      Sketchup.format_length(number).sub(length_text, "")
+      return (number.to_f / area_factor).round(4)
     end
 
     def length_no_unit_float(number)
-      dec_sep = Sketchup::RegionalSettings.decimal_separator
-      length_no_unit_str(number).tr(dec_sep, ".").to_f
+      return (number.to_f / length_factor).round(4)
     end
 
     extend self
