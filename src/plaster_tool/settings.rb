@@ -9,14 +9,16 @@ module Wheerd::Plaster
     SIMPLIFY_TOLERANCE = "simplify_tolerance".freeze
     PLASTER_MIN_AREA = "plaster_min_area".freeze
     DEFAULT_THICKNESS = "default_thickness".freeze
+    PLANE_TOLERANCE = "plane_tolerance".freeze
 
     @hole_min_area = Sketchup.read_default(SECTION, HOLE_MIN_AREA, (0.3.m * 0.3.m).to_f).to_l
     @gap_max_width = Sketchup.read_default(SECTION, GAP_MAX_WIDTH, 0.15.m.to_f).to_l
     @simplify_tolerance = Sketchup.read_default(SECTION, SIMPLIFY_TOLERANCE, 1.mm.to_f).to_l
     @plaster_min_area = Sketchup.read_default(SECTION, PLASTER_MIN_AREA, (2.cm * 2.cm).to_f).to_l
     @default_thickness = Sketchup.read_default(SECTION, DEFAULT_THICKNESS, 10.cm.to_f).to_l
+    @plane_tolerance = Sketchup.read_default(SECTION, PLANE_TOLERANCE, 0).to_l
 
-    attr_reader :hole_min_area, :gap_max_width, :simplify_tolerance, :plaster_min_area, :default_thickness
+    attr_reader :hole_min_area, :gap_max_width, :simplify_tolerance, :plaster_min_area, :default_thickness, :plane_tolerance
 
     HTML_FILE = File.join(PATH, "html", "settings.html")
 
@@ -56,6 +58,7 @@ module Wheerd::Plaster
         simplify_tolerance: length_no_unit_float(@simplify_tolerance),
         plaster_min_area: area_no_unit_float(@plaster_min_area),
         default_thickness: length_no_unit_float(@default_thickness),
+        plane_tolerance: length_no_unit_float(@plane_tolerance),
       }
       json = JSON.pretty_generate(settings)
       @dialog.execute_script("updateSettings(#{json})")
@@ -68,12 +71,14 @@ module Wheerd::Plaster
       @simplify_tolerance = (data["simplify_tolerance"] * length_factor).to_l
       @plaster_min_area = (data["plaster_min_area"] * area_factor).to_l
       @default_thickness = (data["default_thickness"] * length_factor).to_l
+      @plane_tolerance = (data["plane_tolerance"] * length_factor).to_l
 
       Sketchup.write_default(SECTION, HOLE_MIN_AREA, @hole_min_area.to_f)
       Sketchup.write_default(SECTION, GAP_MAX_WIDTH, @gap_max_width.to_f)
       Sketchup.write_default(SECTION, SIMPLIFY_TOLERANCE, @simplify_tolerance.to_f)
       Sketchup.write_default(SECTION, PLASTER_MIN_AREA, @plaster_min_area.to_f)
       Sketchup.write_default(SECTION, DEFAULT_THICKNESS, @default_thickness.to_f)
+      Sketchup.write_default(SECTION, PLANE_TOLERANCE, @plane_tolerance.to_f)
     end
 
     def area_text

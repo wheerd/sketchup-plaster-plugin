@@ -259,9 +259,10 @@ module Wheerd::Plaster
           points = f.outer_loop.vertices.map { |v|
             v.position.transform(transformation)
           }
-          if points.all? { |p| p.on_plane? plane }
+          if points.all? { |p| p.distance_to_plane(plane) <= Settings.plane_tolerance }
+            points_on_plane = points.map { |p| p.project_to_plane plane }
             reverse = f.normal != plane[1]
-            faces << (reverse ? points.reverse : points)
+            faces << (reverse ? points_on_plane.reverse : points_on_plane)
           end
         elsif f.is_a?(Sketchup::Group)
           faces.concat(coplanar_faces(f.entities, plane, transformation * f.transformation))
