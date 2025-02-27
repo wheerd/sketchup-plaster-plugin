@@ -20,8 +20,17 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Set version
+      - name: Set version for main
         uses: jacobtomlinson/gha-find-replace@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          find: '"dev"'
+          replace: '"latest@${{ github.sha }}"'
+          include: src/extension.json
+
+      - name: Set version for tag
+        uses: jacobtomlinson/gha-find-replace@v3
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           find: '"dev"'
           replace: '"${{ github.ref_name }}"'
